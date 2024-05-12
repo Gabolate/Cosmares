@@ -51,5 +51,14 @@ I'll explain them here:
 Let's say you have an Installer with GUI, you would probably have code that moves the cursor and keeps the graphics running, when you use ``Setup.Install`` the system freezes until the installation finishes, which is not good if you want to display a progress bar or have other stuff that must be running, that's when ``Setup.PartialInstall`` comes into place, unlike ``Setup.Install``, when you run it, it only stores 64 data blocks, and then the function ends, in that state you can run any code you want, to finish the installation you just have to place ``Setup.PartialInstall`` in a loop and exit it once the command returns -1. This is also useful when making progress bars, as each time you run it, a decimal with the percentage will be returned.
 
 
+# Notes
+Here are some stuff you should know before using Cosmares:
+
+- Cosmares ONLY works on GPT harddrives with UEFI
+- Kernels made with the Userkit will NOT work
+- Because of using UEFI your kernel cannot use Console.* commands (like Console.WriteLine, Console.Clear, Console.ReadKey, etc)
+- Mind that ``Setup.PartialInstall`` does NOT run ``Heap.Collect();`` like ``Setup.Install`` does, you have to run it manually
+- Cosmares is in a Really early version, it may contain bugs, if you find any please report them here [Issues](https://github.com/Gabolate/Cosmares/issues)
+
 
 If you have come this far, thx for reading, it means a lot, pls leave a star if you found this useful :)  made by [@Gabolate](https://github.com/Gabolate) 2024
