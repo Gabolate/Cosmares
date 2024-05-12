@@ -59,6 +59,6 @@ Here are some stuff you should know before using Cosmares:
 - Because of using UEFI your kernel cannot use Console.* commands (like Console.WriteLine, Console.Clear, Console.ReadKey, etc)
 - Mind that ``Setup.PartialInstall`` does NOT run ``Heap.Collect();`` like ``Setup.Install`` does, you have to run it manually
 - Cosmares is in a Really early version, it may contain bugs, if you find any please report them here [Issues](https://github.com/Gabolate/Cosmares/issues)
-
+- Please enable gzip compression in your system's ISO or else it might use too much RAM in your Installer
 
 If you have come this far, thx for reading, it means a lot, pls leave a star if you found this useful :)  made by [@Gabolate](https://github.com/Gabolate) 2024
