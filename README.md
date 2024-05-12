@@ -7,7 +7,7 @@ Inspired by the original [Cosmares](https://github.com/PratyushKing/Cosmares) by
 
 # Installation
 
-Download it to your Cosmos project trough [Nuget](https://nuget.org)
+Download it to your Cosmos project trough [Nuget](https://www.nuget.org/packages/Cosmares)
 
 Then add this line of code to the start of your Kernel.cs:
 ``using Cosmares;``
