@@ -8,23 +8,29 @@
         <Description>Allows Cosmos Kernels to be installed in a GPT HDD</Description>
         <PackageId>Cosmares</PackageId>
         <Title>Cosmares</Title>
-        <Version>1.0</Version>
+        <Version>1.1.0</Version>
         <Authors>Gabolate</Authors>
         <Company />
         <Copyright>Gabolate</Copyright>
 		<PackageProjectUrl>https://github.com/Gabolate/Cosmares</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/Gabolate/Cosmares</RepositoryUrl>
-        <PackageTags>cosmos;kernel;os;osdev;installer;boot</PackageTags>
+        <PackageTags>cosmos;kernel;os;osdev;installer;boot;gpt;partitions</PackageTags>
         <NeutralLanguage>en</NeutralLanguage>
-        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <AssemblyVersion>1.1.0.0</AssemblyVersion>
         <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IncludeSymbols>True</IncludeSymbols>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
+		<PackageReference Include="Cosmos.Plugs" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
     </ItemGroup>
-
+	
+	<ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 </Project>
