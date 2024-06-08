@@ -17,7 +17,7 @@ using System.Collections;
 
 namespace Cosmares
 {
-    //Cosmares Remake 1.1.0 by Gabolate. Inspired by the original Cosmares made by PratyushKing
+    //Cosmares Remake 1.1.1 by Gabolate. Inspired by the original Cosmares made by PratyushKing
 
     public class Setup
     {
@@ -48,7 +48,7 @@ namespace Cosmares
         /// <exception cref="AccessViolationException">
         /// Thrown when a system is currently being setup by PartialInstall
         /// </exception>
-        public static void Install(ReadOnlySpan<byte> system, Disk disk, uint partition)
+        public static void Install(ReadOnlySpan<byte> system, Disk disk, uint partition, bool useHeapCollect = true, bool useExtraInfo = false)
         {
             //Make some checks before installing:
             if (!PartialInstallAvailable) //Check if there are no other systems being installed
@@ -59,15 +59,16 @@ namespace Cosmares
             {
                 throw new ArgumentNullException("system");
             }
-            if (disk.IsMBR) //Check if the disk is GPT
+            if (!GPT.IsGPTPartition(disk.Host)) //Check if the disk is GPT
             {
                 throw new FormatException("The disk is not GPT!");
             }
-            if (partition > disk.Partitions.Count - 1) //Check if the partition exists
+            GPT gpt = new GPT(disk.Host); //Create a 'GPT' variable to get the partitions
+            if (partition > gpt.Partitions.Count - 1) //Check if the partition exists
             {
                 throw new ArgumentOutOfRangeException("partition");
             }
-            if (disk.Partitions[(int)partition].Host.BlockCount * disk.Partitions[(int)partition].Host.BlockSize < (ulong)system.Length + (128 * 512)) //Check if the partition has enough space for the system (plus 64KB just in case)
+            if (gpt.Partitions[(int)partition].SectorCount * 512 < (ulong)system.Length + (128 * 512)) //Check if the partition has enough space for the system (plus 64KB just in case)
             {
                 throw new Exception("Not enough space in the partition");
             }
@@ -80,12 +81,23 @@ namespace Cosmares
                 if (index == 128 * 512) //Code to execute when the 'block' byte array is full
                 {
                     index = 0; //Reset the byte index
-                    disk.Partitions[(int)partition].Host.WriteBlock(currentBlock, 128uL, ref block); //Write the data block in the partition
+                    disk.Host.WriteBlock(currentBlock + gpt.Partitions[(int)partition].StartSector, 128uL, ref block); //Write the data block in the partition
                     Array.Clear(block); //Clear the 'block' byte array
                     currentBlock += 128; //Skip 128 blocks
-                    Heap.Collect(); //Run GC Collection to prevent the kernel from crashing
+                    if (useHeapCollect)
+                    {
+                        Heap.Collect();
+                    }
                 }
                 block[index] = system[(int)i]; //Store the current system byte in the 'block' byte array
+            }
+            if (useExtraInfo && useExtra) //Add extra system info to the partition
+            {
+                byte[] firstBlock = new byte[512];
+                disk.Host.ReadBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
+                Array.Copy(extraBytes, firstBlock, 300);
+                firstBlock[8] = 0;
+                disk.Host.WriteBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
             }
         }
 
@@ -118,7 +130,7 @@ namespace Cosmares
         /// <exception cref="AccessViolationException">
         /// Thrown when a system is currently being setup by PartialInstall
         /// </exception>
-        public static void Install(ReadOnlySpan<byte> system, BlockDevice disk, uint partition) //Same as the Install() function, this one was made for compatibility
+        public static void Install(ReadOnlySpan<byte> system, BlockDevice disk, uint partition, bool useHeapCollect = true, bool useExtraInfo = false) //Same as the Install() function, this one was made for compatibility
         {
             //Make some checks before installing:
             if (!PartialInstallAvailable) //Check if there are no other systems being installed
@@ -154,9 +166,20 @@ namespace Cosmares
                     disk.WriteBlock(currentBlock + gpt.Partitions[(int)partition].StartSector, 128uL, ref block); //Write the data block in the partition
                     Array.Clear(block); //Clear the 'block' byte array
                     currentBlock += 128; //Skip 128 blocks
-                    Heap.Collect(); //Run GC Collection to prevent the kernel from crashing
+                    if (useHeapCollect)
+                    {
+                        Heap.Collect();
+                    }
                 }
                 block[index] = system[(int)i]; //Store the current system byte in the 'block' byte array
+            }
+            if (useExtraInfo && useExtra) //Add extra system info to the partition
+            {
+                byte[] firstBlock = new byte[512];
+                disk.ReadBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
+                Array.Copy(extraBytes, firstBlock, 300);
+                firstBlock[8] = 1;
+                disk.WriteBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
             }
         }
 
@@ -213,7 +236,7 @@ namespace Cosmares
         /// <exception cref="Exception">
         /// Thrown when there is not enough space in the partition
         /// </exception>
-        public static decimal PartialInstall(ReadOnlySpan<byte> system, Disk disk, uint partition)
+        public static decimal PartialInstall(ReadOnlySpan<byte> system, Disk disk, uint partition, bool useHeapCollect = false, bool useExtraInfo = false)
         {
             if (Done && Crc32.HashToUInt32(system) == SystemCRC32) //Check if it is already completed
             {
@@ -228,6 +251,7 @@ namespace Cosmares
             {
                 throw new DataMisalignedException("The specified system bytes are not the array used originally");
             }
+            GPT gpt = new GPT(disk.Host); //Create a 'GPT' variable to access the partitions
             if (PartialInstallAvailable)
             {
                 //Make some checks before installing:
@@ -235,15 +259,15 @@ namespace Cosmares
                 {
                     throw new ArgumentNullException("system");
                 }
-                if (disk.IsMBR) //Check if the disk is GPT
+                if (!GPT.IsGPTPartition(disk.Host)) //Check if the disk is GPT
                 {
                     throw new FormatException("The disk is not GPT!");
                 }
-                if (partition > disk.Partitions.Count - 1) //Check if the partition exists
+                if (partition > gpt.Partitions.Count - 1) //Check if the partition exists
                 {
                     throw new ArgumentOutOfRangeException("partition");
                 }
-                if (disk.Partitions[(int)partition].Host.BlockCount * disk.Partitions[(int)partition].Host.BlockSize < (ulong)system.Length + (128 * 512)) //Check if the partition has enough space for the system (plus 64KB just in case)
+                if (gpt.Partitions[(int)partition].SectorCount * 512 < (ulong)system.Length + (128 * 512)) //Check if the partition has enough space for the system (plus 64KB just in case)
                 {
                     throw new Exception("Not enough space in the partition");
                 }
@@ -262,19 +286,31 @@ namespace Cosmares
                 if (index == 128 * 512) //Code to execute when the 'block' byte array is full
                 {
                     index = 0; //Reset the byte index
-                    disk.Partitions[(int)partition].Host.WriteBlock(currentBlock, 128uL, ref block); //Write the data block in the partition
+                    disk.Host.WriteBlock(currentBlock + gpt.Partitions[(int)partition].StartSector, 128uL, ref block); //Write the data block in the partition
                     Array.Clear(block); //Clear the 'block' byte array
                     CurrentBlock += 128; //Skip 128 blocks
+                    if (useHeapCollect)
+                    {
+                        Heap.Collect();
+                    }
                     break;
                 }
                 block[index] = system[(int)i]; //Store the current system byte in the 'block' byte array
             }
             if ((decimal)Index / system.Length * 100 == 100) //Finish the installation if it is done
-            { 
-                Done = true; 
+            {
+                Done = true;
             }
             if (Done) //Returns the percentage of the installation process and -1 in case its finished
             {
+                if (useExtraInfo && useExtra) //Add extra system info to the partition
+                {
+                    byte[] firstBlock = new byte[512];
+                    disk.Host.ReadBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
+                    Array.Copy(extraBytes, firstBlock, 300);
+                    firstBlock[8] = 2;
+                    disk.Host.WriteBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
+                }
                 return -1;
             }
             else
@@ -316,7 +352,7 @@ namespace Cosmares
         /// <exception cref="Exception">
         /// Thrown when there is not enough space in the partition
         /// </exception>
-        public static decimal PartialInstall(ReadOnlySpan<byte> system, BlockDevice disk, uint partition) //Same as the PartialInstall(), this was made for compatiblity
+        public static decimal PartialInstall(ReadOnlySpan<byte> system, BlockDevice disk, uint partition, bool useHeapCollect = false, bool useExtraInfo = false) //Same as the PartialInstall(), this was made for compatiblity
         {
             if (Done && Crc32.HashToUInt32(system) == SystemCRC32) //Check if it is already completed
             {
@@ -369,6 +405,10 @@ namespace Cosmares
                     disk.WriteBlock(currentBlock + gpt.Partitions[(int)partition].StartSector, 128uL, ref block); //Write the data block in the partition
                     Array.Clear(block); //Clear the 'block' byte array
                     CurrentBlock += 128; //Skip 128 blocks
+                    if (useHeapCollect)
+                    {
+                        Heap.Collect();
+                    }
                     break;
                 }
                 block[index] = system[(int)i]; //Store the current system byte in the 'block' byte array
@@ -379,6 +419,14 @@ namespace Cosmares
             }
             if (Done) //Returns the percentage of the installation process and -1 in case its finished
             {
+                if (useExtraInfo && useExtra) //Add extra system info to the partition
+                {
+                    byte[] firstBlock = new byte[512];
+                    disk.ReadBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
+                    Array.Copy(extraBytes, firstBlock, 300);
+                    firstBlock[8] = 3;
+                    disk.WriteBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref firstBlock);
+                }
                 return -1;
             }
             else
@@ -446,17 +494,18 @@ namespace Cosmares
         /// </exception>
         public static FS GetFS(Disk disk, uint partition)
         {
-            if (partition >= disk.Partitions.Count) //Check if the specified partition exists
-            {
-                throw new ArgumentOutOfRangeException("partition");
-            }
-            if (disk.IsMBR) //Check if the disk is MBR
+            if (!IsGPTPartition(disk.Host)) //Check if the disk is GPT
             {
                 throw new FormatException("The disk is not GPT!");
             }
-            byte[] start = new byte[512 * 3]; //Byte array for the first 1.5kb of the partition
+            GPT gpt = new GPT(disk.Host); //Create a 'GPT' variable to get the partitions' info
+            if (partition >= gpt.Partitions.Count) //Check if the specified partition is out of range
+            {
+                throw new ArgumentOutOfRangeException("partition");
+            }
+            byte[] start = new byte[512 * 3];//Byte array for the first 1.5kb of the partition
             //Read the first 3 blocks of the partition
-            disk.Partitions[(int)partition].Host.ReadBlock(0uL, 3uL, ref start);
+            disk.Host.ReadBlock(gpt.Partitions[(int)partition].StartSector, 3uL, ref start);
             if (Encoding.ASCII.GetString(start, 0, 8) == "PlutonFS") return FS.PlutonFS;
             if (Encoding.ASCII.GetString(start, 3, 8) == "EXFAT   ") return FS.EXFAT;
             if (start[1080] == 0x53 && start[1081] == 0xEF) return FS.LinuxEXT;
@@ -464,7 +513,7 @@ namespace Cosmares
             if (start[38] == 40 || start[38] == 41) return FS.FAT;
             if (start[66] == 40 || start[66] == 41) return FS.FAT32;
             //Read block 64 to see if ISO6900 is present
-            disk.Partitions[(int)partition].Host.ReadBlock(64uL, 3uL, ref start);
+            disk.Host.ReadBlock(gpt.Partitions[(int)partition].StartSector + 64uL, 3uL, ref start);
             if (Encoding.ASCII.GetString(start, 1, 5) == "CD001") return FS.ISO9660;
             return FS.Unknown; //Return 'Unknown' if all the previous checks failed
         }
@@ -534,16 +583,18 @@ namespace Cosmares
         /// </exception>
         public static void DeleteGPTpartition(Disk disk, uint partitionEntry)
         {
-            if (disk.IsMBR) //Check if the disk is GPT
+            if (!GPT.IsGPTPartition(disk.Host)) //Check if the disk is GPT
             {
                 throw new FormatException("The disk is not GPT!");
             }
-            if (partitionEntry >= disk.Partitions.Count || partitionEntry >= 128) //Check if the specified partition is out of range
+            GPT gpt = new GPT(disk.Host); //'GPT' variable used to get the partitions' information
+            if (partitionEntry >= 128) //Check if the specified partition is out of range
             {
                 throw new ArgumentOutOfRangeException("partition");
             }
             byte[] entries = new byte[512 * 33]; //Byte array to store the GPT header and the partition entries
             byte[] blankEntry = new byte[32]; //Byte array for blank entries
+            bool isEmpty = false; //Tells if the entry is empty
             disk.Host.ReadBlock(1uL, 33uL, ref entries); //Read the GPT header and the partition entries
             using (MemoryStream stream = new MemoryStream(entries))
             {
@@ -558,7 +609,7 @@ namespace Cosmares
                             {
                                 if (reader.ReadBytes(32).SequenceEqual(blankEntry)) //Check if the entry is empty
                                 {
-                                    throw new Exception("The partition entry is empty!");
+                                    isEmpty = true;
                                 }
                                 else
                                 {
@@ -582,6 +633,10 @@ namespace Cosmares
                         }
                     }
                 }
+            }
+            if (isEmpty)
+            {
+                throw new Exception("The partition entry is empty!");
             }
         }
 
@@ -611,12 +666,13 @@ namespace Cosmares
                 throw new FormatException("The disk is not GPT!");
             }
             GPT gpt = new GPT(disk); //'GPT' variable used to get the partitions' information
-            if (partitionEntry >= gpt.Partitions.Count || partitionEntry >= 128) //Check if the specified partition is out of range
+            if (partitionEntry >= 128) //Check if the specified partition is out of range
             {
                 throw new ArgumentOutOfRangeException("partition");
             }
             byte[] entries = new byte[512 * 33]; //Byte array to store the GPT header and the partition entries
             byte[] blankEntry = new byte[32]; //Byte array for blank entries
+            bool isEmpty = false; //Tells if the entry is empty
             disk.ReadBlock(1uL, 33uL, ref entries); //Read the GPT header and the partition entries
             using (MemoryStream stream = new MemoryStream(entries))
             {
@@ -631,7 +687,7 @@ namespace Cosmares
                             {
                                 if (reader.ReadBytes(32).SequenceEqual(blankEntry)) //Check if the entry is empty
                                 {
-                                    throw new Exception("The partition entry is empty!");
+                                    isEmpty = true;
                                 }
                                 else
                                 {
@@ -655,6 +711,10 @@ namespace Cosmares
                         }
                     }
                 }
+            }
+            if (isEmpty)
+            {
+                throw new Exception("The partition entry is empty!");
             }
         }
 
@@ -687,11 +747,12 @@ namespace Cosmares
         /// </exception>
         public static uint CreateGPTpartition(Disk disk, ulong startingBlock, ulong sizeInMB)
         {
-            if (disk.IsMBR) //Check if the disk is GPT
+            if (!GPT.IsGPTPartition(disk.Host)) //Check if the disk is GPT
             {
                 throw new FormatException("The disk is not GPT!");
             }
-            if (disk.Partitions.Count == 128) //Check if all the partition entries are reserved
+            GPT gpt = new GPT(disk.Host); //'GPT' variable to access the partitions' information
+            if (gpt.Partitions.Count == 128) //Check if all the partition entries are reserved
             {
                 throw new EndOfStreamException("The partition entries are full!");
             }
@@ -880,6 +941,250 @@ namespace Cosmares
                 }
             }
             throw new Exception("The partition is overlapping an already existing one");
+        }
+
+        /// <summary>
+        /// Stores 300 extra bytes for the system to install
+        /// </summary>
+        /// <param name="extraInfo">
+        /// The bytes to store
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when there are not 300 bytes
+        /// </exception>
+        public static void StoreInformation(ReadOnlySpan<byte> extraInfo)
+        {
+            if (extraInfo.Length != 300)
+            {
+                throw new ArgumentOutOfRangeException("extraInfo");
+            }
+            extraInfo.CopyTo(extraBytes); //Copy the extra bytes
+            useExtra = true;
+        }
+
+
+        private static bool useExtra = false;
+
+        private static byte[] extraBytes = new byte[300];
+
+        /// <summary>
+        /// OSinfo, used for writing extra data when installing a system
+        /// </summary>
+        public struct OSinfo
+        {
+            /// <summary>
+            /// The OS' name (136 chars max)
+            /// </summary>
+            public string osname;
+            /// <summary>
+            /// The creator of the OS (136 chars max)
+            /// </summary>
+            public string author;
+            /// <summary>
+            /// Major version (for example: '1'.2.3)
+            /// </summary>
+            public uint major;
+            /// <summary>
+            /// Minor version (for example: 1.'2'.3)
+            /// </summary>
+            public uint minor;
+            /// <summary>
+            /// Patch version (for example: 1.2.'3')
+            /// </summary>
+            public uint patch;
+            /// <summary>
+            /// Version year (for example: 1.2.3_'2024')
+            /// </summary>
+            public uint year;
+            /// <summary>
+            /// Version month (for example: 1.2.3_2024'06')
+            /// </summary>
+            public uint month;
+            /// <summary>
+            /// Version day (for example: 1.2.3_202406'07')
+            /// </summary>
+            public uint day;
+            /// <summary>
+            /// Development stage for the version
+            /// </summary>
+            public DevStage stage;
+        }
+
+        /// <summary>
+        /// Available development stages (Alpha, Beta, Release Candidate, Release and Post Release Fixes)
+        /// </summary>
+        public enum DevStage
+        {
+            Alpha,
+            Beta,
+            ReleaseCandidate,
+            Release,
+            PostReleaseFixes
+        }
+
+        /// <summary>
+        /// Stores extra information when installing an OS
+        /// </summary>
+        /// <param name="info">
+        /// The information to use
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the OS' name or the author's name is more than 136 characters
+        /// </exception>
+        public static void StoreInformation(OSinfo info)
+        {
+            if (info.osname.Length > 136)
+            {
+                throw new ArgumentOutOfRangeException("info", "The OS' name is too long");
+            }
+            if (info.author.Length > 136)
+            {
+                throw new ArgumentOutOfRangeException("info", "The author's name is too long");
+            }
+            byte[] bytes = new byte[300]; //Create a byte array for the extra info
+            using (MemoryStream stream = new MemoryStream(bytes))
+            {
+                using (BinaryWriter writer = new BinaryWriter(stream))
+                {
+                    //Write that the OS has been installed with Cosmares
+                    stream.Write(Encoding.ASCII.GetBytes("Cosmares"));
+                    writer.Write((byte)0); //Write reserved byte
+                    writer.Write(info.major); //Write major version
+                    writer.Write(info.minor); //Write minor version
+                    writer.Write(info.patch); //Write patch version
+                    writer.Write(info.day); //Write version day
+                    writer.Write(info.month); //Write version month
+                    writer.Write(info.year); //Write version year
+                    writer.Write((byte)info.stage); //Write the development stage
+                    writer.Write(info.author); //Write the author's name
+                    writer.Write(info.osname); //Write the OS' name
+                    StoreInformation(bytes); //Write the OS information
+                }
+            }
+        }
+
+        /// <summary>
+        /// If available, gets the information of an OS installed with Cosmares
+        /// </summary>
+        /// <param name="disk">
+        /// The disk to use
+        /// </param>
+        /// <param name="partition">
+        /// The partition to use
+        /// </param>
+        /// <returns>
+        /// The OS' information
+        /// </returns>
+        /// <exception cref="FormatException">
+        /// Thrown when the disk is not GPT
+        /// </exception>
+        /// <exception cref="DriveNotFoundException">
+        /// Thrown when the specified partition does not contain a Cosmares OS info
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the specified partition is out of range
+        /// </exception>
+        public static OSinfo GetInformation(Disk disk, uint partition)
+        {
+            if (!GPT.IsGPTPartition(disk.Host)) //Check if the disk is GPT
+            {
+                throw new FormatException("The disk is not GPT!");
+            }
+            GPT gpt = new GPT(disk.Host); //Create a 'GPT' variable to get the partitions information
+            if (partition >= gpt.Partitions.Count) //Check if the partition is inside the range
+            {
+                throw new ArgumentOutOfRangeException("partition");
+            }
+            byte[] block = new byte[512];
+            disk.Host.ReadBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref block);
+            if (Encoding.ASCII.GetString(block, 0, 8) == "Cosmares")
+            {
+                using(MemoryStream stream = new MemoryStream(block))
+                {
+                    using(BinaryReader reader = new BinaryReader(stream))
+                    {
+                        stream.Position = 9;
+                        return new OSinfo()
+                        {
+                            major = reader.ReadUInt32(),
+                            minor = reader.ReadUInt32(),
+                            patch = reader.ReadUInt32(),
+                            day = reader.ReadUInt32(),
+                            month = reader.ReadUInt32(),
+                            year = reader.ReadUInt32(),
+                            stage = (DevStage)reader.ReadByte(),
+                            author = reader.ReadString(),
+                            osname = reader.ReadString()
+                        };
+                    }
+                }
+            }
+            else
+            {
+                throw new DriveNotFoundException("No OSes installed with Cosmares extra info found");
+            }
+        }
+
+        /// <summary>
+        /// If available, gets the information of an OS installed with Cosmares
+        /// </summary>
+        /// <param name="disk">
+        /// The disk to use
+        /// </param>
+        /// <param name="partition">
+        /// The partition to use
+        /// </param>
+        /// <returns>
+        /// The OS' information
+        /// </returns>
+        /// <exception cref="FormatException">
+        /// Thrown when the disk is not GPT
+        /// </exception>
+        /// <exception cref="DriveNotFoundException">
+        /// Thrown when the specified partition does not contain a Cosmares OS info
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the specified partition is out of range
+        /// </exception>
+        public static OSinfo GetInformation(BlockDevice disk, uint partition) //The same as GetInformation(), this one was made for compatiblity
+        {
+            if (!GPT.IsGPTPartition(disk)) //Check if the disk is GPT
+            {
+                throw new FormatException("The disk is not GPT!");
+            }
+            GPT gpt = new GPT(disk); //Create a 'GPT' variable to get the partitions information
+            if (partition >= gpt.Partitions.Count) //Check if the partition is inside the range
+            {
+                throw new ArgumentOutOfRangeException("partition");
+            }
+            byte[] block = new byte[512];
+            disk.ReadBlock(gpt.Partitions[(int)partition].StartSector, 1uL, ref block);
+            if (Encoding.ASCII.GetString(block, 0, 8) == "Cosmares")
+            {
+                using (MemoryStream stream = new MemoryStream(block))
+                {
+                    using (BinaryReader reader = new BinaryReader(stream))
+                    {
+                        stream.Position = 9;
+                        return new OSinfo()
+                        {
+                            major = reader.ReadUInt32(),
+                            minor = reader.ReadUInt32(),
+                            patch = reader.ReadUInt32(),
+                            day = reader.ReadUInt32(),
+                            month = reader.ReadUInt32(),
+                            year = reader.ReadUInt32(),
+                            stage = (DevStage)reader.ReadByte(),
+                            author = reader.ReadString(),
+                            osname = reader.ReadString()
+                        };
+                    }
+                }
+            }
+            else
+            {
+                throw new DriveNotFoundException("No OSes installed with Cosmares extra info found");
+            }
         }
     }
 }

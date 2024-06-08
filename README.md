@@ -15,22 +15,27 @@ Then add this line of code to the start of your Kernel.cs:
 
 # Commands
 
-Cosmares comes with 5 commands, ``Setup.Install``, ``Setup.PartialInstall``, ``Setup.GetFS``, ``CreateGPTpartition`` and ``DeleteGPTpartition``
+Cosmares comes with 7 commands:
+
+``Setup.Install``, ``Setup.PartialInstall``, ``Setup.GetFS``, ``Setup.CreateGPTpartition``, ``Setup.DeleteGPTpartition``, ``Setup.StoreInformation`` and ``Setup.GetInformation``
 
 
 
 
 
-- ``Setup.Install(ReadOnlySpan<byte> system, Disk/BlockDevice disk, uint partition);``
+- ``Setup.Install(ReadOnlySpan<byte> system, Disk/BlockDevice disk, uint partition, bool useHeapCollect = true, bool useExtraInfo = false);``
 
   Installs a Cosmos system in the specified Disk at the specified Partition.
 
+  Optional arguments include the use of Heap.Collect while installing (true by default) and the option to include OS Info specified with ``Setup.StoreInformation`` (false by default)
 
 
-- ``Setup.PartialInstall(ReadOnlySpan<byte> system, Disk/BlockDevice disk, uint partition);``
+- ``Setup.PartialInstall(ReadOnlySpan<byte> system, Disk/BlockDevice disk, uint partition, bool useHeapCollect = false, bool useExtraInfo = false);``
 
   Does the same as ``Setup.Install`` only that this one allows making "pauses" between each write of 128 blocks.
   On each pause it returns a decimal with the percentage of the installation process. Returns -1 if the installation is done.
+
+  (Both extra arguments are set to false)
 
 - ``Setup.GetFS(Disk/BlockDevice disk, uint partition);``
 
@@ -56,7 +61,17 @@ Cosmares comes with 5 commands, ``Setup.Install``, ``Setup.PartialInstall``, ``S
 
 - ``Setup.DeleteGPTpartition(Disk/BlockDevice disk, uint partitionEntry);``
 
-  Removes a GPT partition.
+  Removes a GPT partition. (Note: Removing a partition does NOT erase its contents)
+
+- ``Setup.StoreInformation(OSinfo/ReadOnlySpan<byte> extraInfo);``
+
+  Stores extra OS information (like the author's name, OS name, version, etc) for the next OS that will be installed
+  
+  (In case a byte array is being used, the length must be 300 bytes)
+
+- ``Setup.GetInformation(Disk/BlockDevice disk, uint partition);``
+  
+  Gets extra information (if available) of a installed OS
 
 # Usage
 
@@ -87,7 +102,6 @@ Here are some stuff you should know before using Cosmares:
 - Cosmares ONLY works on GPT harddrives with UEFI
 - Kernels made with the Userkit will NOT work
 - Because of using UEFI your kernel cannot use Console.* commands (like Console.WriteLine, Console.Clear, Console.ReadKey, etc)
-- Mind that ``Setup.PartialInstall`` does NOT run ``Heap.Collect();`` like ``Setup.Install`` does, you have to run it manually
 - Cosmares is in a Really early version, it may contain bugs, if you find any please report them [here](https://github.com/Gabolate/Cosmares/issues)
 - If possible, please enable gzip compression in your system's ISO or else it might use too much RAM in your Installer
 
