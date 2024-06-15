@@ -17,7 +17,7 @@ using System.Collections;
 
 namespace Cosmares
 {
-    //Cosmares Remake 1.1.1 by Gabolate. Inspired by the original Cosmares made by PratyushKing
+    //Cosmares Remake 1.1.2 by Gabolate. Inspired by the original Cosmares made by PratyushKing
 
     public class Setup
     {
@@ -32,6 +32,12 @@ namespace Cosmares
         /// </param>
         /// <param name="partition">
         /// The partition index to use
+        /// </param>
+        /// <param name="useHeapCollect">
+        /// Tells if Heap.Collect should be using during install
+        /// </param>
+        /// <param name="useExtraInfo">
+        /// Tells if it should include information added with StoreInformation()
         /// </param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when the 'system' byte array is null or empty
@@ -114,6 +120,12 @@ namespace Cosmares
         /// </param>
         /// <param name="partition">
         /// The partition index to use
+        /// </param>
+        /// <param name="useHeapCollect">
+        /// Tells if Heap.Collect should be using during install
+        /// </param>
+        /// <param name="useExtraInfo">
+        /// Tells if it should include information added with StoreInformation()
         /// </param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when the 'system' byte array is null or empty
@@ -221,6 +233,12 @@ namespace Cosmares
         /// <returns>
         /// A decimal with the percentage of the installation process (returns -1 if the installation is finished)
         /// </returns>
+        /// <param name="useHeapCollect">
+        /// Tells if Heap.Collect should be using during install
+        /// </param>
+        /// <param name="useExtraInfo">
+        /// Tells if it should include information added with StoreInformation()
+        /// </param>
         /// <exception cref="DataMisalignedException">
         /// Thrown when the 'system' byte array changed its content during a block write pause
         /// </exception>
@@ -337,6 +355,12 @@ namespace Cosmares
         /// <returns>
         /// A decimal with the percentage of the installation process (returns -1 if the installation is finished)
         /// </returns>
+        /// <param name="useHeapCollect">
+        /// Tells if Heap.Collect should be using during install
+        /// </param>
+        /// <param name="useExtraInfo">
+        /// Tells if it should include information added with StoreInformation()
+        /// </param>
         /// <exception cref="DataMisalignedException">
         /// Thrown when the 'system' byte array changed its content during a block write pause
         /// </exception>
@@ -569,7 +593,7 @@ namespace Cosmares
         /// <param name="disk">
         /// The disk to use
         /// </param>
-        /// <param name="partition">
+        /// <param name="partitionEntry">
         /// The partition to remove
         /// </param>
         /// <exception cref="FormatException">
@@ -647,7 +671,7 @@ namespace Cosmares
         /// <param name="disk">
         /// The disk to use
         /// </param>
-        /// <param name="partition">
+        /// <param name="partitionEntry">
         /// The partition to remove
         /// </param>
         /// <exception cref="FormatException">
