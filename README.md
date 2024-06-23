@@ -15,9 +15,9 @@ Then add this line of code to the start of your Kernel.cs:
 
 # Commands
 
-Cosmares comes with 7 commands:
+Cosmares comes with 11 commands:
 
-``Setup.Install``, ``Setup.PartialInstall``, ``Setup.GetFS``, ``Setup.CreateGPTpartition``, ``Setup.DeleteGPTpartition``, ``Setup.StoreInformation`` and ``Setup.GetInformation``
+``Setup.Install``, ``Setup.PartialInstall``, ``Setup.GetFS``, ``Setup.CreateGPTpartition``, ``Setup.DeleteGPTpartition``, ``Setup.StoreInformation``, ``Setup.GetInformation``, ``Setup.GPT2MBR``, ``Setup.CreateGPT``, ``Setup.MBR2GPT`` and ``Setup.UsesGPT``
 
 
 
@@ -73,6 +73,28 @@ Cosmares comes with 7 commands:
   
   Gets extra information (if available) of a installed OS
 
+- ``Setup.GPT2MBR(Disk/BlockDevice disk);``
+
+  Converts a GPT disk into MBR format.
+
+  Note: This requires having no more than 4 partitions.
+
+- ``Setup.CreateGPT(Disk/BlockDevice disk);``
+
+  Creates GPT into a disk.
+
+  Note: This command does NOT convert MBR to GPT, the partition table will be erased, for MBR to GPT please use ``Setup.MBR2GPT``
+
+- ``Setup.MBR2GPT(Disk/BlockDevice disk);``
+
+  Converts a MBR disk into GPT format.
+
+  Note: This commands requires having enough space for the primary and secondary GPT (16KiB + 512 bytes on both start and end of the disk) and no extended partitions.
+
+- ``Setup.UsesMBR(Disk/BlockDevice disk);``
+
+  Checks if MBR is present on the disk.
+
 # Usage
 
 First, you should have two kernels, Your OS and Your OS Installer.
@@ -93,17 +115,18 @@ Let's say you have an Installer with GUI, you would probably have code that move
 
 Cosmares 1.1.0 and higher supports filesystem identification, removal and creation for GPT partitions.
 
-``At the time of writing this README.md, Cosmares does NOT add GPT style on blank disks, it only works on HDDs with GPT already in them``
+``Since Cosmares 1.2 its possible to add GPT in blank disks + converting MBR to GPT and viceversa``
 
 
 # Notes
 Here are some stuff you should know before using Cosmares:
 
-- Cosmares ONLY works on GPT harddrives with UEFI
-- Kernels made with the Userkit will NOT work
-- Because of using UEFI your kernel cannot use Console.* commands (like Console.WriteLine, Console.Clear, Console.ReadKey, etc)
+- Cosmares ONLY works on GPT harddrives with UEFI (applied only to OS installation)
+- Kernels made with the Userkit will NOT work, use the latest Devkit instead
+- Because of using UEFI, your kernel cannot use Console.* commands (like Console.WriteLine, Console.Clear, Console.ReadKey, etc)
 - Cosmares is in a Really early version, it may contain bugs, if you find any please report them [here](https://github.com/Gabolate/Cosmares/issues)
 - If possible, please enable gzip compression in your system's ISO or else it might use too much RAM in your Installer
+- On installed systems is recommended to not access the partition where its located, as it becomes read-only and might cause issues.
 
 If you have come this far, thx for reading, it means a lot, pls leave a star if you found this useful :)  
 
