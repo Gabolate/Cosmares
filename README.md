@@ -17,7 +17,7 @@ Then add this line of code to the start of your Kernel.cs:
 
 Cosmares comes with 11 commands:
 
-``Setup.Install``, ``Setup.PartialInstall``, ``Setup.GetFS``, ``Setup.CreateGPTpartition``, ``Setup.DeleteGPTpartition``, ``Setup.StoreInformation``, ``Setup.GetInformation``, ``Setup.GPT2MBR``, ``Setup.CreateGPT``, ``Setup.MBR2GPT`` and ``Setup.UsesGPT``
+``Setup.Install``, ``Setup.PartialInstall``, ``Setup.GetFS``, ``Setup.CreateGPTpartition``, ``Setup.DeleteGPTpartition``, ``Setup.StoreInformation``, ``Setup.GetInformation``, ``Setup.GPT2MBR``, ``Setup.CreateGPT``, ``Setup.MBR2GPT`` and ``Setup.UsesMBR``
 
 
 
