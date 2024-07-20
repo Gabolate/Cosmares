@@ -101,7 +101,7 @@ First, you should have two kernels, Your OS and Your OS Installer.
 
 Get the byte array of your OS ISO into your Installer using [VFS](https://github.com/CosmosOS/Cosmos/blob/master/Docs/articles/Kernel/VFS.md) or [ManifestResourceStream](https://github.com/CosmosOS/Cosmos/blob/master/Docs/articles/Kernel/ManifestResouceStream.md).
 
-You will also need a ``Disk`` variable, you can get one using VFS (for example: ``fs.Disks[0]``) (Cosmares is also compatible with ``Disk`` variables generated with [COR-ET's AHCI/SATA library](https://github.com/COR-ET/CORNEL_AHCI_INIT))  ``Note: if for some reason you cannot use a 'Disk' variable, 'BlockDevice' works as well``
+You will also need a ``Disk`` or a ``BlockDevice`` variable, you can get one using [COR-ET's AHCI/SATA library](https://github.com/COR-ET/CORNEL_AHCI_INIT)) (This means you need a SATA/AHCI disk and hard drive)
 
 Now that we have all that set, we can start using Cosmares' commands like ``Setup.Install`` with the variables we made earlier, like this:
 
@@ -121,7 +121,7 @@ Cosmares 1.1.0 and higher supports filesystem identification, removal and creati
 # Notes
 Here are some stuff you should know before using Cosmares:
 
-- Cosmares ONLY works on GPT harddrives with UEFI (applied only to OS installation)
+- Cosmares ONLY works on SATA/AHCI GPT harddrives with UEFI
 - Kernels made with the Userkit will NOT work, use the latest Devkit instead
 - Because of using UEFI, your kernel cannot use Console.* commands (like Console.WriteLine, Console.Clear, Console.ReadKey, etc)
 - Cosmares is in a Really early version, it may contain bugs, if you find any please report them [here](https://github.com/Gabolate/Cosmares/issues)
