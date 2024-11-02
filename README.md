@@ -2,7 +2,20 @@
 A library that allows Cosmos Kernels to be installed in a GPT HDD plus a few more disk related tools
 
 Inspired by the original [Cosmares](https://github.com/PratyushKing/Cosmares) by [@PratyushKing](https://github.com/PratyushKing)
+___________________________________________________________________________________________
 
+**Warning!**
+```
+This tool is No Longer Maintained due to lots of issues and bugs in Cosmos Generation 2.
+There won't be more updates until Gen 3 is made
+
+Sorry for the inconvenience.
+
+If you want to help making Cosmos' Gen 3 faster, please go to the link below.
+```
+[Cosmos Gen 3 Link](https://github.com/CosmosOS/Cosmos/issues/3088)
+
+___________________________________________________________________________________________
 
 
 # Installation
