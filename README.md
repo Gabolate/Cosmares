@@ -143,4 +143,4 @@ Here are some stuff you should know before using Cosmares:
 
 If you have come this far, thx for reading, it means a lot, pls leave a star if you found this useful :)  
 
-Made by [@Gabolate](https://github.com/Gabolate) 2024
+Made by [@Gabolate](https://github.com/Gabolate) 2024 - 2026
